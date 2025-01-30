@@ -8,10 +8,15 @@ interface Config {
   maxTokens: number;
 }
 
+// Prints the message in a gray color
+const debugLog = (message: string): void => {
+  console.log(`\x1b[90m${message}\x1b[0m`);
+};
+
 const loadApiKey = async (): Promise<string> => {
   const apiKeyEnv = process.env.OPENAI_API_KEY;
   if (apiKeyEnv) {
-    console.log('Using OPENAI_API_KEY environment variable');
+    debugLog('Using OPENAI_API_KEY environment variable');
     return apiKeyEnv;
   }
 
@@ -22,7 +27,7 @@ const loadApiKey = async (): Promise<string> => {
   }
 
   const apiKey = (await apiKeyFile.text()).trim();
-  console.log('Using OpenAI API key from ~/.auto-commit-openai-api-key');
+  debugLog('Using OpenAI API key from ~/.auto-commit-openai-api-key');
   return apiKey;
 }
 
@@ -57,6 +62,7 @@ const getGitDiff = (): string => {
 
 // Generate commit message using OpenAI API
 const generateCommitMessage = async (diff: string, config: Config): Promise<string> => {
+
   const messages = [
     {
       role: 'system',
@@ -90,22 +96,6 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
   return data.choices[0].message.content.trim();
 };
 
-// Copy to clipboard (cross-platform)
-const copyToClipboard = (text: string): void => {
-  try {
-    const platform = process.platform;
-    const command = platform === 'linux'
-      ? 'xclip -selection clipboard'
-      : platform === 'darwin'
-        ? 'pbcopy'
-        : 'clip';
-
-    execSync(`echo "${text}" | ${command}`, { stdio: 'pipe' });
-  } catch (error) {
-    console.warn('Failed to copy to clipboard:', (error as Error).message);
-  }
-};
-
 // Main function
 const main = async () => {
   try {
@@ -117,24 +107,40 @@ const main = async () => {
     const config = await loadConfig();
     const diff = getGitDiff();
 
+    debugLog(`Got git diff with length: ${diff.length}`);
+
     if (!diff.trim()) {
-      console.log('No changes to commit. Exiting.');
+      console.log('No changes to commit. Did you forget to `git add`?');
       return;
     }
 
-    console.log('Generating commit message...');
+    const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let i = 0;
+    const spinnerInterval = setInterval(() => {
+      process.stdout.write(`\r${spinner[i]} Generating commit message...`);
+      i = (i + 1) % spinner.length;
+    }, 80);
+
     const commitMessage = await generateCommitMessage(diff, config);
-
+    
+    clearInterval(spinnerInterval);
+    process.stdout.write('\r'); // Clear spinner line
     console.log(commitMessage);
+    
     // Ask the user if they want to commit with this message
-    const userInput = prompt('Do you want to commit with this message? (y/n)');
-    if (userInput?.toLowerCase() === 'y') {
-      execSync(`git commit -m "${commitMessage}"`);
-    }
-
-    // copyToClipboard(commitMessage);
-    // console.log('\nCommit message copied to clipboard:\n');
-    // console.log(commitMessage);
+    process.stdout.write('Do you want to commit with this message? (y/n) ');
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.once('data', (data) => {
+      const input = data.toString().toLowerCase();
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      console.log(); // Add newline after key press
+      
+      if (input === 'y') {
+        execSync(`git commit -m "${commitMessage}"`);
+      }
+    });
 
   } catch (error) {
     console.error('Error:', (error as Error).message);
