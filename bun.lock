@@ -3,6 +3,9 @@
   "workspaces": {
     "": {
       "name": "auto-commit",
+      "dependencies": {
+        "tiktoken": "^1.0.18",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -19,6 +22,8 @@
     "@types/ws": ["@types/ws@8.5.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw=="],
 
     "bun-types": ["bun-types@1.2.1", "", { "dependencies": { "@types/node": "*", "@types/ws": "~8.5.10" } }, "sha512-p7bmXUWmrPWxhcbFVk7oUXM5jAGt94URaoa3qf4mz43MEhNAo/ot1urzBqctgvuq7y9YxkuN51u+/qm4BiIsHw=="],
+
+    "tiktoken": ["tiktoken@1.0.18", "", {}, "sha512-DXJesdYwmBHtkmz1sji+UMZ4AOEE8F7Uw/PS/uy0XfkKOzZC4vXkYXHMYyDT+grdflvF4bggtPt9cYaqOMslBw=="],
 
     "typescript": ["typescript@5.7.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw=="],
 

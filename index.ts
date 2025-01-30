@@ -1,3 +1,4 @@
+import { encoding_for_model  } from 'tiktoken';
 import { execSync } from 'child_process';
 import path from 'path';
 
@@ -96,6 +97,14 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
   return data.choices[0].message.content.trim();
 };
 
+const calcCost = (diff: string): number => {
+  const encoder = encoding_for_model('gpt-4o-mini');
+  const tokens = encoder.encode(diff);
+
+  // $0.000150 / 1K input tokens
+  return (tokens.length / 1000) * 0.000150;
+};
+
 // Main function
 const main = async () => {
   try {
@@ -108,6 +117,17 @@ const main = async () => {
     const diff = getGitDiff();
 
     debugLog(`Got git diff with length: ${diff.length}`);
+    const cost = calcCost(diff);
+    debugLog(`Estimated cost: $${cost.toFixed(6)}`);
+
+    if (cost > 0.01) {
+      console.log('Git diff will cost you $0.01 or more, are you sure you want to continue? (y/n)');
+      const userInput = prompt('Do you want to continue? (y/n)');
+      if (userInput?.toLowerCase() !== 'y') {
+        console.log('Aborting.');
+        return;
+      }
+    }
 
     if (!diff.trim()) {
       console.log('No changes to commit. Did you forget to `git add`?');
@@ -127,21 +147,14 @@ const main = async () => {
     process.stdout.write('\r'); // Clear spinner line
     console.log(commitMessage);
     
-    // Ask the user if they want to commit with this message
-    process.stdout.write('Do you want to commit with this message? (y/n) ');
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.once('data', (data) => {
-      const input = data.toString().toLowerCase();
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      console.log(); // Add newline after key press
-      
-      if (input === 'y') {
-        execSync(`git commit -m "${commitMessage}"`);
-      }
-    });
 
+    console.log('\n');
+    // Ask the user if they want to commit with this message
+    prompt("Press Enter to commit with this message, or Ctrl+C to cancel.");
+
+    execSync(`git commit -m "${commitMessage}"`);
+    debugLog('Committed with message:');
+    console.log(commitMessage);
   } catch (error) {
     console.error('Error:', (error as Error).message);
     process.exit(1);
