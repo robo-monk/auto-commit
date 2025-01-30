@@ -71,7 +71,7 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
     },
     {
       role: 'user',
-      content: `Here is the git diff:\n\n${diff}`
+      content: `Here is the git diff:\n\n${diff}\nReturn ONLY the commit message, no other text.`
     }
   ];
 
