@@ -1,4 +1,4 @@
-import { encoding_for_model  } from 'tiktoken';
+import { encoding_for_model } from 'tiktoken';
 import { execSync } from 'child_process';
 import path from 'path';
 
@@ -39,7 +39,7 @@ const loadConfig = async (): Promise<Config> => {
   return {
     apiKey,
     model: 'gpt-4o-mini',
-    maxTokens: 200,
+    maxTokens: 500,
   };
 };
 
@@ -53,9 +53,16 @@ const isGitRepo = (): boolean => {
 };
 
 // Get git diff output
-const getGitDiff = (): string => {
+const getGitDiff = async (): Promise<string> => {
   try {
-    return execSync('git diff --cached', { encoding: 'utf-8' });
+    const id = crypto.randomUUID();
+    const filename = `git-diff-${id}.txt`;
+    // const tempFile = Bun.file(path.join(process.cwd(), `git-diff-${id}.txt`));
+    execSync(`git diff --cached --output=${filename}`, { encoding: 'utf-8' });
+    const diff = await Bun.file(filename).text();
+    // delete the file
+    await Bun.file(filename).delete();
+    return diff;
   } catch (error) {
     throw new Error('Failed to get git diff: ' + (error as Error).message);
   }
@@ -67,19 +74,26 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
   const messages = [
     {
       role: 'system',
-      content: `You are a precise git commit message generator. Follow these rules strictly:
-1. Use conventional commit format (type(scope): description)
-2. Types: feat, fix, docs, style, refactor, test, chore
-3. Keep the message concise but descriptive (add as many details as needed. max 100 chars)
-4. Focus on the "what" and "why", not the "how"
-5. Use present tense, imperative mood
-6. No period at the end`
+      content: `You are a precise git commit message generator, following conventional commit formats.`
     },
     {
       role: 'user',
       content: `Generate a commit message for this diff:
 ---
 ${diff}
+---
+
+Rules:
+1. Use conventional commit format (type(scope): description)
+2. Types: feat, fix, docs, style, refactor, test, chore
+3. Keep the message concise but descriptive (add as many details as needed, MAX. 72 chars)
+4. Focus on the "what" and "why", not the "how"
+5. Use present tense, imperative mood
+6. No period at the end
+7. For large diffs with multiple unrelated changes:
+   - Focus on the most significant change
+   - Use "chore" type if changes are scattered and hard to categorize
+   - Use a concise bullet point list (max. 200 chars) description explaining WHY the changes were made
 ---
 Respond ONLY with the commit message, no explanations or additional text.`
     }
@@ -94,7 +108,7 @@ Respond ONLY with the commit message, no explanations or additional text.`
     body: JSON.stringify({
       model: config.model,
       messages: messages,
-      temperature: 0.4,
+      temperature: 0.3,
       max_tokens: config.maxTokens
     })
   });
@@ -124,7 +138,7 @@ const main = async () => {
     }
 
     const config = await loadConfig();
-    const diff = getGitDiff();
+    const diff = await getGitDiff();
 
     debugLog(`Got git diff with length: ${diff.length}`);
     const cost = calcCost(diff);
@@ -152,13 +166,13 @@ const main = async () => {
     }, 80);
 
     const commitMessage = await generateCommitMessage(diff, config);
-    
+
     clearInterval(spinnerInterval);
     process.stdout.write('\r'); // Clear spinner line
     console.log('\nProposed commit message:');
     console.log('------------------------');
     console.log(commitMessage);
-    
+
 
     console.log('\n');
     // Ask the user if they want to commit with this message
