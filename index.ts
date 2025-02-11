@@ -58,7 +58,7 @@ const getGitDiff = async (): Promise<string> => {
     const id = crypto.randomUUID();
     const filename = `git-diff-${id}.txt`;
     // const tempFile = Bun.file(path.join(process.cwd(), `git-diff-${id}.txt`));
-    execSync(`git diff --cached --output=${filename}`, { encoding: 'utf-8' });
+    execSync(`git diff --cached --unified=500 --output=${filename}`, { encoding: 'utf-8' });
     const diff = await Bun.file(filename).text();
     // delete the file
     await Bun.file(filename).delete();
@@ -85,15 +85,19 @@ ${diff}
 
 Rules:
 1. Use conventional commit format (type(scope): description)
-2. Types: feat, fix, docs, style, refactor, test, chore
+2. Types:
+      - feat: A new feature
+      - fix: A bug fix
+      - docs: Documentation only changes
+      - style: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+      - refactor: A code change that neither fixes a bug nor adds a feature
+      - test: Adding missing tests or correcting existing tests
+      - chore: Changes to the build process or auxiliary tools and libraries such as documentation generation
 3. Keep the message concise but descriptive (add as many details as needed, MAX. 72 chars)
-4. Focus on the "what" and "why", not the "how"
-5. Use present tense, imperative mood
-6. No period at the end
-7. For large diffs with multiple unrelated changes:
-   - Focus on the most significant change
-   - Use "chore" type if changes are scattered and hard to categorize
-   - Use a concise bullet point list (max. 200 chars) description explaining WHY the changes were made
+4. IF and ONLY IF the diff is very large and contains multiple unrelated changes, use a concise bullet point list (max. 200 chars) description explaining WHY the changes were made
+5. ALWAYS Focus on the "what" and "why", not the "how". Follow the conventional commit format to describe the changes in an atomic and natural way.
+6. Use present tense, imperative mood
+7. No period at the end
 ---
 Respond ONLY with the commit message, no explanations or additional text.`
     }
