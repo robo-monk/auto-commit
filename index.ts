@@ -70,7 +70,7 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
       content: `You are a precise git commit message generator. Follow these rules strictly:
 1. Use conventional commit format (type(scope): description)
 2. Types: feat, fix, docs, style, refactor, test, chore
-3. Keep the message concise but descriptive (max 72 chars)
+3. Keep the message concise but descriptive (add as many details as needed. max 100 chars)
 4. Focus on the "what" and "why", not the "how"
 5. Use present tense, imperative mood
 6. No period at the end`
