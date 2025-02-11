@@ -67,11 +67,21 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
   const messages = [
     {
       role: 'system',
-      content: 'Generate a concise git commit message in conventional commit format based on the provided diff. Focus on the main changes and their impact.'
+      content: `You are a precise git commit message generator. Follow these rules strictly:
+1. Use conventional commit format (type(scope): description)
+2. Types: feat, fix, docs, style, refactor, test, chore
+3. Keep the message concise but descriptive (max 72 chars)
+4. Focus on the "what" and "why", not the "how"
+5. Use present tense, imperative mood
+6. No period at the end`
     },
     {
       role: 'user',
-      content: `Here is the git diff:\n\n${diff}\nReturn ONLY the commit message, no other text.`
+      content: `Generate a commit message for this diff:
+---
+${diff}
+---
+Respond ONLY with the commit message, no explanations or additional text.`
     }
   ];
 
@@ -84,7 +94,7 @@ const generateCommitMessage = async (diff: string, config: Config): Promise<stri
     body: JSON.stringify({
       model: config.model,
       messages: messages,
-      temperature: 0.7,
+      temperature: 0.4,
       max_tokens: config.maxTokens
     })
   });
@@ -121,10 +131,10 @@ const main = async () => {
     debugLog(`Estimated cost: $${cost.toFixed(6)}`);
 
     if (cost > 0.01) {
-      console.log('Git diff will cost you $0.01 or more, are you sure you want to continue? (y/n)');
-      const userInput = prompt('Do you want to continue? (y/n)');
+      console.log('\nWarning: This operation will cost $' + cost.toFixed(4));
+      const userInput = prompt('Do you want to proceed? (y/N): ');
       if (userInput?.toLowerCase() !== 'y') {
-        console.log('Aborting.');
+        console.log('Operation cancelled.');
         return;
       }
     }
@@ -145,6 +155,8 @@ const main = async () => {
     
     clearInterval(spinnerInterval);
     process.stdout.write('\r'); // Clear spinner line
+    console.log('\nProposed commit message:');
+    console.log('------------------------');
     console.log(commitMessage);
     
 
