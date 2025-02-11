@@ -39,7 +39,7 @@ const loadConfig = async (): Promise<Config> => {
   return {
     apiKey,
     model: 'gpt-4o-mini',
-    maxTokens: 500,
+    maxTokens: 220,
   };
 };
 
@@ -108,7 +108,7 @@ Respond ONLY with the commit message, no explanations or additional text.`
     body: JSON.stringify({
       model: config.model,
       messages: messages,
-      temperature: 0.3,
+      temperature: 0,
       max_tokens: config.maxTokens
     })
   });
